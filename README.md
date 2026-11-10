@@ -29,6 +29,14 @@ Another directory can be forced with the `directory` option / `--directory` flag
 directory is a matter of dropping the UNECE zip (e.g. `d19a.zip`) into `untdid/` and running
 `npm run build:specs`.
 
+## Live demo
+
+**https://ggilluk.github.io/EXCELEDI/** — a self-contained page (one HTML file, no server, nothing
+uploaded) that converts EDIFACT to Excel and back in the browser, shows validation results,
+the segment-group tree and a preview of every sheet, runs a round-trip check, and browses the
+UN message specifications. Build it locally with `npm run build:web` (output: `site/index.html`);
+`.github/workflows/pages.yml` runs the tests and deploys it to GitHub Pages.
+
 ## Usage
 
 ```bash

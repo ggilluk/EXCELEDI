@@ -13,18 +13,31 @@ export class EdifactSyntaxError extends Error {
 /** Syntax identifiers whose character repertoire is not covered by ISO 8859-1. */
 const UTF8_SYNTAX = new Set(['UNOW', 'UNOX', 'UNOY']);
 
-/** Decodes raw bytes according to the syntax identifier found in UNB (S001 0001). */
+const latin1Decode = (bytes: Uint8Array): string => {
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) out += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return out;
+};
+
+/** Decodes raw bytes according to the syntax identifier found in UNB (S001 0001). Works in Node and browsers. */
 export function decodeInterchange(bytes: Uint8Array): string {
-  const head = Buffer.from(bytes.subarray(0, 64)).toString('latin1');
+  const head = latin1Decode(bytes.subarray(0, 64));
   const m = /UNB.(UNO[A-Z])/.exec(head);
-  const enc = m && UTF8_SYNTAX.has(m[1]) ? 'utf8' : 'latin1';
-  let text = Buffer.from(bytes).toString(enc);
+  let text = m && UTF8_SYNTAX.has(m[1]) ? new TextDecoder('utf-8').decode(bytes) : latin1Decode(bytes);
   if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   return text;
 }
 
-export function encodeInterchange(text: string, syntaxIdentifier: string | undefined): Buffer {
-  return Buffer.from(text, syntaxIdentifier && UTF8_SYNTAX.has(syntaxIdentifier) ? 'utf8' : 'latin1');
+/** Encodes EDIFACT text: UTF-8 for UNOW/UNOX/UNOY, otherwise ISO 8859-1. */
+export function encodeInterchange(text: string, syntaxIdentifier: string | undefined): Uint8Array {
+  if (syntaxIdentifier && UTF8_SYNTAX.has(syntaxIdentifier)) return new TextEncoder().encode(text);
+  const out = new Uint8Array(text.length);
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c > 0xff) throw new Error(`Character "${text[i]}" cannot be encoded in ISO 8859-1 (${syntaxIdentifier ?? 'UNOA'})`);
+    out[i] = c;
+  }
+  return out;
 }
 
 /**

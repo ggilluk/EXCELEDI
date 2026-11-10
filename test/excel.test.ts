@@ -19,7 +19,7 @@ const fixtures = join(__dirname, 'fixtures');
 const read = (f: string) => readFileSync(join(fixtures, f), 'latin1');
 const registry = getDefaultRegistry();
 
-async function reload(xlsx: Buffer): Promise<ExcelJS.Workbook> {
+async function reload(xlsx: Uint8Array): Promise<ExcelJS.Workbook> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(xlsx as unknown as ExcelJS.Buffer);
   return wb;

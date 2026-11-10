@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "pretest": "npm run build:specs",
     "test": "vitest run",
-    "cli": "tsx src/cli.ts"
+    "cli": "tsx src/cli.ts",
+    "build:web": "npm run build:specs && tsx scripts/build-web.ts"
   },
   "engines": {
     "node": ">=18"
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "esbuild": "^0.28.2",
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

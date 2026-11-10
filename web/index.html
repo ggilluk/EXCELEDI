@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDIFACT Excel Transformer</title>
+<meta name="description" content="Convert UN/EDIFACT container messages (BAPLIE, COPRAR, CODECO, VERMAS, ...) to Excel and back, validated against the official UNTDID directories. Runs entirely in the browser.">
+<style>/*STYLE*/</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">⇄</span>
+      <div>
+        <h1>EDIFACT ⇄ Excel</h1>
+        <p class="sub">UN/EDIFACT container messages, transformed and validated against the official UNTDID directories</p>
+      </div>
+    </div>
+    <span class="local" title="All processing happens in this page. Files are never uploaded.">● Runs locally in your browser</span>
+  </div>
+  <nav class="wrap tabs" role="tablist">
+    <button role="tab" data-tab="to-excel" aria-selected="true">EDI → Excel</button>
+    <button role="tab" data-tab="to-edi" aria-selected="false">Excel → EDI</button>
+    <button role="tab" data-tab="specs" aria-selected="false">Specification browser</button>
+  </nav>
+</header>
+
+<main class="wrap">
+  <!-- EDI -> Excel -->
+  <section id="to-excel" class="panel" role="tabpanel">
+    <div class="grid">
+      <div class="card">
+        <div class="card-head">
+          <h2>1. EDIFACT input</h2>
+          <div class="controls">
+            <select id="sample" aria-label="Load a sample"></select>
+            <label class="btn ghost">Open file…<input id="edi-file" type="file" accept=".edi,.txt,.edifact,*/*" hidden></label>
+          </div>
+        </div>
+        <textarea id="edi-input" spellcheck="false" aria-label="EDIFACT interchange"></textarea>
+        <div class="row">
+          <label class="check"><input id="all-segments" type="checkbox"> Columns for all segments</label>
+          <label class="check">Directory <select id="dir-override"><option value="">from UNH</option></select></label>
+          <button id="convert" class="btn primary">Convert to Excel</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>2. Result</h2>
+          <div class="controls">
+            <button id="roundtrip" class="btn ghost" disabled>Round-trip check</button>
+            <button id="download-xlsx" class="btn primary" disabled>Download .xlsx</button>
+          </div>
+        </div>
+        <div id="summary" class="summary muted">Pick a sample or paste an interchange, then convert.</div>
+        <div id="roundtrip-result"></div>
+        <h3>Validation</h3>
+        <ul id="issues" class="issues"></ul>
+        <h3>Message structure <span class="muted small">(segments assigned to the UN segment table)</span></h3>
+        <div id="tree" class="tree"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>3. Workbook preview</h2>
+        <span class="muted small">One sheet per segment table level · Path links rows to their parent group · hover a header for the element specification</span>
+      </div>
+      <div id="sheet-tabs" class="sheet-tabs"></div>
+      <div id="sheet" class="sheet"><p class="muted pad">No workbook yet.</p></div>
+    </div>
+  </section>
+
+  <!-- Excel -> EDI -->
+  <section id="to-edi" class="panel" role="tabpanel" hidden>
+    <div class="grid">
+      <div class="card">
+        <div class="card-head"><h2>1. Workbook</h2></div>
+        <label id="drop" class="drop">
+          <input id="xlsx-file" type="file" accept=".xlsx" hidden>
+          <strong>Drop an .xlsx here</strong> or click to choose
+          <span class="muted small">A workbook produced by this tool, possibly edited in Excel</span>
+        </label>
+        <div class="row">
+          <button id="use-last" class="btn ghost" disabled>Use workbook from “EDI → Excel”</button>
+          <label class="check"><input id="recalc" type="checkbox" checked> Recalculate UNT/UNE/UNZ counts</label>
+        </div>
+        <p class="muted small">Edit values, clear cells or add rows with a new Path (e.g. <code>M1/SG6#4</code> and <code>M1/SG6#4/SG7#1</code> for a new stowage location with its container). Segments are written in segment table order.</p>
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <h2>2. EDIFACT output</h2>
+          <button id="download-edi" class="btn primary" disabled>Download .edi</button>
+        </div>
+        <div id="edi-summary" class="summary muted">No workbook converted yet.</div>
+        <textarea id="edi-output" spellcheck="false" readonly aria-label="EDIFACT output"></textarea>
+        <h3>Validation</h3>
+        <ul id="edi-issues" class="issues"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spec browser -->
+  <section id="specs" class="panel" role="tabpanel" hidden>
+    <div class="card">
+      <div class="card-head">
+        <h2>UN/EDIFACT message specifications</h2>
+        <div class="controls">
+          <select id="spec-dir" aria-label="Directory"></select>
+          <select id="spec-msg" aria-label="Message"></select>
+        </div>
+      </div>
+      <div id="spec-head"></div>
+      <div class="grid">
+        <div>
+          <h3>Segment table</h3>
+          <div id="spec-tree" class="tree spec"></div>
+        </div>
+        <div>
+          <h3 id="seg-title">Segment</h3>
+          <div id="seg-detail" class="muted">Select a segment in the table.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="wrap muted small">
+  Structures generated from the UNECE UNTDID directory files (D.95B, D.00B, D.13B, D.16A, D.21B); service segments per ISO 9735.
+  Source: <a href="https://github.com/ggilluk/EXCELEDI">github.com/ggilluk/EXCELEDI</a>
+</footer>
+<script>/*SCRIPT*/</script>
+</body>
+</html>

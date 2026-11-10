@@ -9,7 +9,7 @@ import { interchangeToWorkbook, type WorkbookOptions } from './excel/write';
 
 export * from './spec/types';
 export { CONTAINER_MESSAGES, type ContainerMessageType } from './spec/container-messages';
-export { SpecRegistry, getDefaultRegistry, normaliseDirectory } from './spec/registry';
+export { SpecRegistry, getDefaultRegistry, setDefaultRegistry, normaliseDirectory } from './spec/registry';
 export { SERVICE_SEGMENTS } from './spec/service-segments';
 export * from './edifact/model';
 export { formatIssue, type Issue, type Severity } from './edifact/issues';
@@ -22,11 +22,17 @@ export { interchangeToWorkbook, type WorkbookOptions } from './excel/write';
 export { workbookToInterchange, WorkbookFormatError, type ReadWorkbookOptions } from './excel/read';
 export { parseColumnKey, type ColumnRef } from './excel/columns';
 
+/** Buffer in Node (backwards compatible), Uint8Array in browsers. */
+function toBytes(data: ArrayBuffer | ArrayBufferView): Uint8Array {
+  const view = data instanceof ArrayBuffer ? new Uint8Array(data) : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  return typeof Buffer !== 'undefined' ? Buffer.from(view.buffer, view.byteOffset, view.byteLength) : view;
+}
+
 export interface EdiToExcelOptions extends AnalyseOptions, WorkbookOptions {}
 
 export interface EdiToExcelResult {
   /** The `.xlsx` file contents. */
-  xlsx: Buffer;
+  xlsx: Uint8Array;
   workbook: ExcelJS.Workbook;
   analysis: AnalysedInterchange;
   issues: Issue[];
@@ -52,7 +58,7 @@ export async function ediToExcel(input: string | Uint8Array, options: EdiToExcel
     );
   }
   const workbook = interchangeToWorkbook(analysis, options);
-  const xlsx = Buffer.from(await workbook.xlsx.writeBuffer());
+  const xlsx = toBytes(await workbook.xlsx.writeBuffer());
   return { xlsx, workbook, analysis, issues: analysis.issues };
 }
 
@@ -62,14 +68,14 @@ export interface ExcelToEdiResult {
   /** EDIFACT text. */
   edi: string;
   /** EDIFACT encoded for the syntax identifier in UNB (ISO 8859-1, or UTF-8 for UNOW/UNOY). */
-  bytes: Buffer;
+  bytes: Uint8Array;
   analysis: AnalysedInterchange;
   issues: Issue[];
 }
 
 /** Converts a workbook produced by `ediToExcel` (possibly edited) back to EDIFACT. */
 export async function excelToEdi(
-  xlsx: Buffer | ArrayBuffer | Uint8Array | ExcelJS.Workbook,
+  xlsx: ArrayBuffer | Uint8Array | ExcelJS.Workbook,
   options: ExcelToEdiOptions = {},
 ): Promise<ExcelToEdiResult> {
   let workbook: ExcelJS.Workbook;
@@ -77,8 +83,7 @@ export async function excelToEdi(
     workbook = xlsx;
   } else {
     workbook = new ExcelJS.Workbook();
-    const data = xlsx instanceof ArrayBuffer ? Buffer.from(xlsx) : Buffer.from(xlsx.buffer, xlsx.byteOffset, xlsx.byteLength);
-    await workbook.xlsx.load(data as unknown as ExcelJS.Buffer);
+    await workbook.xlsx.load(toBytes(xlsx) as unknown as ExcelJS.Buffer);
   }
   const interchange = workbookToInterchange(workbook, options);
   const edi = serializeInterchange(interchange, options);

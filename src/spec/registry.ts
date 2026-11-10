@@ -9,11 +9,23 @@ import type { DirectorySpec, MessageDef, SegmentDef, SpecIndex } from './types';
 export class SpecRegistry {
   private readonly index: SpecIndex;
   private readonly cache = new Map<string, DirectorySpec>();
+  readonly specDir: string;
 
-  constructor(readonly specDir: string = locateSpecDir()) {
-    const file = join(specDir, 'index.json');
+  /**
+   * @param source directory containing the generated `index.json` and `<DIR>.json` files, or
+   *   the generated specifications themselves (e.g. for use in a browser).
+   */
+  constructor(source: string | { index: SpecIndex; directories: DirectorySpec[] } = locateSpecDir()) {
+    if (typeof source !== 'string') {
+      this.specDir = '';
+      this.index = source.index;
+      for (const d of source.directories) this.cache.set(d.directory, d);
+      return;
+    }
+    this.specDir = source;
+    const file = join(source, 'index.json');
     if (!existsSync(file)) {
-      throw new Error(`UN/EDIFACT specifications not found in ${specDir}. Run "npm run build:specs" first.`);
+      throw new Error(`UN/EDIFACT specifications not found in ${source}. Run "npm run build:specs" first.`);
     }
     this.index = JSON.parse(readFileSync(file, 'utf8')) as SpecIndex;
   }
@@ -89,6 +101,11 @@ function locateSpecDir(): string {
 }
 
 let defaultRegistry: SpecRegistry | undefined;
+/** Replaces the registry used when no `registry` option is given (e.g. specs embedded in a web page). */
+export function setDefaultRegistry(registry: SpecRegistry): void {
+  defaultRegistry = registry;
+}
+
 export function getDefaultRegistry(): SpecRegistry {
   defaultRegistry ??= new SpecRegistry();
   return defaultRegistry;
